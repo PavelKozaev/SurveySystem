@@ -34,5 +34,13 @@ namespace SurveySystem.Infrastructure.Repositories
                 .OrderBy(q => q.Order)
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<Question?> GetByIdWithAnswersAsync(Guid questionId)
+        {
+            return await _context.Questions
+                .Include(q => q.Answers)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(q => q.Id == questionId);
+        }
     }
 }

@@ -6,5 +6,6 @@ namespace SurveySystem.Application.Interfaces
     {
         Task<List<Guid>> GetAnsweredQuestionIdsAsync(Guid interviewId);
         Task AddAsync(Result result);
+        Task<bool> ExistsAsync(Guid interviewId, Guid questionId);
     }
 }

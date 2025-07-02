@@ -21,5 +21,11 @@ namespace SurveySystem.Infrastructure.Repositories
         {
             await _context.Results.AddAsync(result);
         }
+
+        public async Task<bool> ExistsAsync(Guid interviewId, Guid questionId)
+        {
+            return await _context.Results
+                .AnyAsync(r => r.InterviewId == interviewId && r.QuestionId == questionId);
+        }
     }
 }
