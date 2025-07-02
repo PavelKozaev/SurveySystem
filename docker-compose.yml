@@ -15,7 +15,7 @@ services:
     container_name: survey_api
     build:
       context: .
-      dockerfile: src/SurveySystem.Api/Dockerfile
+      dockerfile: SurveySystem.Api/Dockerfile
     ports:
       - "8080:8080"
       - "8081:8081"
@@ -24,7 +24,7 @@ services:
       - "ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=SurveyDb;Username=postgres;Password=postgres;"
       - ASPNETCORE_URLS=http://+:8080
     depends_on:
-      - db
+      - postgres
 
 volumes:
   postgres_data:

@@ -1,15 +1,21 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using SurveySystem.Application.Interfaces;
 using SurveySystem.Contracts;
 using SurveySystem.Domain.Entities;
-using SurveySystem.Infrastructure.Persistence;
 
 namespace SurveySystem.Application.Services
 {
-    public class InterviewService(ApplicationDbContext context, IMapper mapper) : IInterviewService
+    public class InterviewService(
+        IInterviewRepository interviewRepository,
+        IQuestionRepository questionRepository,
+        IResultRepository resultRepository,
+        IUnitOfWork unitOfWork,
+        IMapper mapper) : IInterviewService
     {
-        private readonly ApplicationDbContext _context = context;
+        private readonly IInterviewRepository _interviewRepository = interviewRepository;
+        private readonly IQuestionRepository _questionRepository = questionRepository;
+        private readonly IResultRepository _resultRepository = resultRepository;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
 
         public async Task<Guid> StartInterviewAsync(Guid surveyId)
@@ -20,36 +26,25 @@ namespace SurveySystem.Application.Services
                 SurveyId = surveyId,
                 StartedAt = DateTime.UtcNow
             };
-            _context.Interviews.Add(interview);
-            await _context.SaveChangesAsync();
+            await _interviewRepository.AddAsync(interview);
+            await _unitOfWork.SaveChangesAsync(); 
             return interview.Id;
         }
 
         public async Task<QuestionWithAnswersDto?> GetCurrentQuestionAsync(Guid interviewId)
         {
-            var interview = await _context.Interviews
-                .AsNoTracking()
-                .FirstOrDefaultAsync(i => i.Id == interviewId);
+            var interview = await _interviewRepository.GetByIdAsync(interviewId)
+                ?? throw new Exception($"Interview with id {interviewId} not found."); 
 
-            if (interview == null) throw new Exception("Interview not found");
+            var answeredQuestionIds = await _resultRepository.GetAnsweredQuestionIdsAsync(interviewId);
 
-            var answeredQuestionIds = await _context.Results
-                .Where(r => r.InterviewId == interviewId)
-                .Select(r => r.QuestionId)
-                .ToListAsync();
-
-            var nextQuestion = await _context.Questions
-                .AsNoTracking()
-                .Include(q => q.Answers)
-                .Where(q => q.SurveyId == interview.SurveyId && !answeredQuestionIds.Contains(q.Id))
-                .OrderBy(q => q.Order)
-                .FirstOrDefaultAsync();
+            var nextQuestion = await _questionRepository.GetNextQuestionAsync(interview.SurveyId, answeredQuestionIds);
 
             if (nextQuestion == null)
             {
                 interview.CompletedAt = DateTime.UtcNow;
-                _context.Interviews.Update(interview);
-                await _context.SaveChangesAsync();
+                _interviewRepository.Update(interview);
+                await _unitOfWork.SaveChangesAsync();
                 return null;
             }
 
@@ -66,16 +61,14 @@ namespace SurveySystem.Application.Services
                 SelectedAnswerId = request.SelectedAnswerId,
                 CreatedAt = DateTime.UtcNow
             };
+            await _resultRepository.AddAsync(result);
 
-            _context.Results.Add(result);
-            await _context.SaveChangesAsync();
+            var currentQuestion = await _questionRepository.GetByIdAsync(request.QuestionId)
+                ?? throw new Exception($"Question with id {request.QuestionId} not found.");
 
-            var currentQuestion = await _context.Questions.FindAsync(request.QuestionId);
-            var nextQuestion = await _context.Questions
-                .AsNoTracking()
-                .Where(q => q.SurveyId == currentQuestion.SurveyId && q.Order > currentQuestion.Order)
-                .OrderBy(q => q.Order)
-                .FirstOrDefaultAsync();
+            var nextQuestion = await _questionRepository.GetNextQuestionByOrderAsync(currentQuestion.SurveyId, currentQuestion.Order);
+
+            await _unitOfWork.SaveChangesAsync();
 
             return new NextQuestionResponseDto { NextQuestionId = nextQuestion?.Id };
         }

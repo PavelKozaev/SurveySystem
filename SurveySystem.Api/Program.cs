@@ -4,6 +4,7 @@ using SurveySystem.Application.Interfaces;
 using SurveySystem.Application.Services;
 using SurveySystem.Domain.Entities;
 using SurveySystem.Infrastructure.Persistence;
+using SurveySystem.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +12,14 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
+builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+builder.Services.AddScoped<IResultRepository, ResultRepository>();
+
 builder.Services.AddScoped<IInterviewService, InterviewService>();
+
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddControllers();
@@ -47,23 +55,23 @@ async Task SeedData(ApplicationDbContext context)
         var survey = new Survey
         {
             Id = Guid.Parse("1f9a3e42-1c7b-4b8f-8e4a-3e8a1d7f2b1c"),
-            Title = "Тестовый опрос о регионах",
+            Title = "Test Survey About Regions",
             CreatedAt = DateTime.UtcNow
         };
 
-        var question1 = new Question { Id = Guid.NewGuid(), SurveyId = survey.Id, Text = "В каком регионе Вы проживаете?", Order = 1 };
-        var question2 = new Question { Id = Guid.NewGuid(), SurveyId = survey.Id, Text = "Довольны ли Вы своим регионом?", Order = 2 };
+        var question1 = new Question { Id = Guid.NewGuid(), SurveyId = survey.Id, Text = "Which region do you live in?", Order = 1 };
+        var question2 = new Question { Id = Guid.NewGuid(), SurveyId = survey.Id, Text = "Are you satisfied with your region?", Order = 2 };
 
         var answers1 = new List<Answer>
         {
-            new() { Id = Guid.NewGuid(), QuestionId = question1.Id, Text = "Москва" },
-            new() { Id = Guid.NewGuid(), QuestionId = question1.Id, Text = "Московская область" },
-            new() { Id = Guid.NewGuid(), QuestionId = question1.Id, Text = "Другой регион" }
+            new() { Id = Guid.NewGuid(), QuestionId = question1.Id, Text = "Moscow" },
+            new() { Id = Guid.NewGuid(), QuestionId = question1.Id, Text = "Moscow Region" },
+            new() { Id = Guid.NewGuid(), QuestionId = question1.Id, Text = "Other region" }
         };
         var answers2 = new List<Answer>
         {
-            new() { Id = Guid.NewGuid(), QuestionId = question2.Id, Text = "Да" },
-            new() { Id = Guid.NewGuid(), QuestionId = question2.Id, Text = "Нет" }
+            new() { Id = Guid.NewGuid(), QuestionId = question2.Id, Text = "Yes" },
+            new() { Id = Guid.NewGuid(), QuestionId = question2.Id, Text = "No" }
         };
 
         await context.Surveys.AddAsync(survey);
