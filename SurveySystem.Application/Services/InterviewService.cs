@@ -7,16 +7,10 @@ using SurveySystem.Infrastructure.Persistence;
 
 namespace SurveySystem.Application.Services
 {
-    public class InterviewService : IInterviewService
+    public class InterviewService(ApplicationDbContext context, IMapper mapper) : IInterviewService
     {
-        private readonly ApplicationDbContext _context;
-        private readonly IMapper _mapper;
-
-        public InterviewService(ApplicationDbContext context, IMapper mapper)
-        {
-            _context = context;
-            _mapper = mapper;
-        }
+        private readonly ApplicationDbContext _context = context;
+        private readonly IMapper _mapper = mapper;
 
         public async Task<Guid> StartInterviewAsync(Guid surveyId)
         {
@@ -53,7 +47,6 @@ namespace SurveySystem.Application.Services
 
             if (nextQuestion == null)
             {
-                // Анкета пройдена
                 interview.CompletedAt = DateTime.UtcNow;
                 _context.Interviews.Update(interview);
                 await _context.SaveChangesAsync();
