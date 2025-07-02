@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using SurveySystem.Application.Exceptions;
 using SurveySystem.Application.Interfaces;
 using SurveySystem.Contracts;
 using SurveySystem.Domain.Entities;
@@ -34,7 +35,7 @@ namespace SurveySystem.Application.Services
         public async Task<QuestionWithAnswersDto?> GetCurrentQuestionAsync(Guid interviewId)
         {
             var interview = await _interviewRepository.GetByIdAsync(interviewId)
-                ?? throw new Exception($"Interview with id {interviewId} not found."); 
+                ?? throw new NotFoundException($"Interview with id {interviewId} not found.");
 
             var answeredQuestionIds = await _resultRepository.GetAnsweredQuestionIdsAsync(interviewId);
 
@@ -64,7 +65,7 @@ namespace SurveySystem.Application.Services
             await _resultRepository.AddAsync(result);
 
             var currentQuestion = await _questionRepository.GetByIdAsync(request.QuestionId)
-                ?? throw new Exception($"Question with id {request.QuestionId} not found.");
+                ?? throw new NotFoundException($"Question with id {request.QuestionId} not found.");
 
             var nextQuestion = await _questionRepository.GetNextQuestionByOrderAsync(currentQuestion.SurveyId, currentQuestion.Order);
 
