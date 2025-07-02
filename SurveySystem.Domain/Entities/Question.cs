@@ -6,6 +6,6 @@
         public Guid SurveyId { get; set; }
         public string Text { get; set; }
         public int Order { get; set; }
-        public ICollection<Answer> Answers { get; set; } = new List<Answer>();
+        public ICollection<Answer> Answers { get; set; } = [];
     }
 }
